@@ -18,7 +18,7 @@ func NewPostController(service services.PostService) *PostController {
 func (c *PostController) CreatePost(ctx *fiber.Ctx) error {
 	var req struct {
 		Content string `json:"content"`
-		MoodTag string `json:"mood_internal_id"`
+		MoodTag int64  `json:"mood_internal_id"`
 	}
 
 	if err := ctx.BodyParser(&req); err != nil {
@@ -35,8 +35,9 @@ func (c *PostController) CreatePost(ctx *fiber.Ctx) error {
 	if req.Content == "" {
 		return utils.BadRequest(ctx, "Content cannot be empty", "")
 	}
-	if req.MoodTag == "" {
-		req.MoodTag = "neutral" // default mood
+	//if moodtag == nil maka set default ke 0
+	if req.MoodTag == 0 {
+		req.MoodTag = 0 // default mood
 	}
 
 	post, err := c.service.Create(userID, req.MoodTag, req.Content)

@@ -9,7 +9,7 @@ import (
 )
 
 type PostService interface {
-	Create(userID int64, moodTag string, content string) (*models.Post, error)
+	Create(userID int64, moodTag int64, content string) (*models.Post, error)
 }
 
 type postService struct {
@@ -20,11 +20,11 @@ func NewPostService(repo repositories.PostRepository) PostService {
 	return &postService{repo}
 }
 
-func (s *postService) Create(userID int64, moodTag string, content string) (*models.Post, error) {
+func (s *postService) Create(userID int64, moodTag int64, content string) (*models.Post, error) {
 	post := &models.Post{
 		PublicID:   uuid.New(),
 		UserID:     userID,
-		MoodTag:    moodTag,
+		MoodTagID:  moodTag,
 		Content:    content,
 		AiResponse: "",
 		CreatedAt:  time.Now(),

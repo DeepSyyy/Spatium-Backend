@@ -20,5 +20,5 @@ func Setup(app *fiber.App, uc *controllers.UserController, pc *controllers.PostC
 	app.Post("/api/v1/login", uc.Login)
 
 	//post routes
-	app.Post("/api/v1/posts", middlewares.JWTProtected, pc.CreatePost)
+	app.Post("/api/v1/post", middlewares.JWTProtected, pc.CreatePost)
 }

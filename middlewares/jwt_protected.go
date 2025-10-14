@@ -34,6 +34,7 @@ func JWTProtected(ctx *fiber.Ctx) error {
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(os.Getenv("JWT_SECRET")), nil
 	})
+
 	if err != nil || !token.Valid {
 		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"status":  "error",
