@@ -20,8 +20,13 @@ func Start() {
 	userService := services.NewUserService(userRepo)
 	userController := controllers.NewUserController(userService)
 
+	// post module setup
+	postRepo := repositories.NewPostRepository(config.DB)
+	postService := services.NewPostService(postRepo)
+	postController := controllers.NewPostController(postService)
+
 	// Setup routes
-	routes.Setup(app, userController)
+	routes.Setup(app, userController, postController)
 
 	// Setup port
 	port := config.AppConfig.AppPort
