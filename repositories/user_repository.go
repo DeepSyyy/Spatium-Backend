@@ -1,6 +1,8 @@
 package repositories
 
 import (
+	"time"
+
 	"github.com/DeepSyyy/Spatium-Backend/config"
 	"github.com/DeepSyyy/Spatium-Backend/models"
 )
@@ -8,6 +10,7 @@ import (
 type UserRepository interface {
 	Create(user *models.User) error
 	FindByRecoveryCode(code string) (*models.User, error)
+	UpdateLastLogin(user *models.User) error
 }
 
 type userRepository struct {
@@ -28,4 +31,12 @@ func (r *userRepository) FindByRecoveryCode(code string) (*models.User, error) {
 		return nil, err
 	}
 	return &user, nil
+}
+
+func (r *userRepository) UpdateLastLogin(user *models.User) error {
+	return config.DB.Model(&models.User{}).
+		Where("internal_id = ?", user.InternalID).
+		Updates(map[string]interface{}{
+			"last_login": time.Now(),
+		}).Error
 }
