@@ -40,3 +40,29 @@ func (c *UserController) Register(ctx *fiber.Ctx) error {
 
 	return utils.Success(ctx, "Registration successful", response)
 }
+
+func (c *UserController) Login(ctx *fiber.Ctx) error {
+	var body struct {
+		RecoveryCode string `json:"recovery_code"`
+	}
+	err := ctx.BodyParser(&body)
+	if err != nil {
+		return utils.BadRequest(ctx, "Invalid request body", err.Error())
+	}
+
+	user, err := c.service.Login(body.RecoveryCode)
+	if err != nil {
+		return utils.Unauthorized(ctx, "Login Failed, invalid credential", err.Error())
+	}
+
+	token, _ := utils.GenerateToken(user.PublicID.String(), user.Alias)
+	refreshToken, _ := utils.GenerateRefreshToken(user.PublicID.String())
+
+	var userResponse models.UserResponse
+	_ = copier.Copy(&userResponse, &user)
+	return utils.Success(ctx, "Login successful", fiber.Map{
+		"user":          userResponse,
+		"token":         token,
+		"refresh_token": refreshToken,
+	})
+}

@@ -12,6 +12,7 @@ import (
 
 type UserService interface {
 	Register() (*models.User, error)
+	Login(recoveryCode string) (*models.User, error)
 }
 
 type userService struct {
@@ -50,4 +51,20 @@ func generateRecoveryCode() string {
 		}
 	}
 	return string(code)
+}
+
+func (s *userService) Login(recoveryCode string) (*models.User, error) {
+	user, err := s.repo.FindByRecoveryCode(recoveryCode)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update last login time
+	user.LastLogin = time.Now()
+	err = s.repo.UpdateLastLogin(user)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
