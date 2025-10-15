@@ -29,15 +29,19 @@ func Start() {
 
 	routes.Setup(app, userController, postController, commentController)
 
-	// ✅ FIX: Prioritize Railway PORT
-	port := os.Getenv("APP_PORT")
+	// ✅ FIX: Always use Railway's PORT when available
+	port := os.Getenv("PORT")
 	if port == "" {
-		port = config.AppConfig.AppPort // fallback to .env (local)
+		// fallback ke APP_PORT untuk local only
+		port = config.AppConfig.AppPort
 	}
 
+	log.Println("📦 Environment PORT:", os.Getenv("PORT"))
+	log.Println("📦 Config APP_PORT:", config.AppConfig.AppPort)
 	log.Println("🚀 Server running on port:", port)
+
 	if err := app.Listen("0.0.0.0:" + port); err != nil {
 		log.Printf("❌ Server stopped with error: %v", err)
-		log.Println("⚠️  Preventing crash (Railway auto-restart avoided).")
+		log.Println("⚠️ Preventing crash (Railway auto-restart avoided).")
 	}
 }
