@@ -25,8 +25,13 @@ func Start() {
 	postService := services.NewPostService(postRepo)
 	postController := controllers.NewPostController(postService)
 
+	// comment module setup
+	commentRepo := repositories.NewCommentRepository(config.DB)
+	commentService := services.NewCommentService(commentRepo)
+	commentController := controllers.NewCommentController(commentService)
+
 	// Setup routes
-	routes.Setup(app, userController, postController)
+	routes.Setup(app, userController, postController, commentController)
 
 	// Setup port
 	port := config.AppConfig.AppPort

@@ -9,7 +9,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func Setup(app *fiber.App, uc *controllers.UserController, pc *controllers.PostController) {
+func Setup(app *fiber.App, uc *controllers.UserController, pc *controllers.PostController, cc *controllers.CommentController) {
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
@@ -26,4 +26,9 @@ func Setup(app *fiber.App, uc *controllers.UserController, pc *controllers.PostC
 	app.Get("/api/v1/user/posts", middlewares.JWTProtected, pc.GetPostsByUser)
 	app.Put("/api/v1/posts/:post_id", middlewares.JWTProtected, pc.UpdatePost)
 	app.Delete("/api/v1/posts/:post_id", middlewares.JWTProtected, pc.DeletePost)
+
+	//comment routes
+	app.Post("/api/v1/comments", middlewares.JWTProtected, cc.CreateComment)
+	app.Get("/api/v1/posts/:post_id/comments", middlewares.JWTProtected, cc.GetCommentsByPostID)
+	app.Delete("/api/v1/comments/:comment_id", middlewares.JWTProtected, cc.DeleteComment)
 }

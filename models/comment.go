@@ -14,3 +14,11 @@ type Comment struct {
 	Content    string    `json:"content" db:"content" gorm:"type:text;not null"`
 	CreatedAt  time.Time `json:"created_at" db:"created_at" gorm:"autoCreateTime"`
 }
+
+type CommentResponse struct {
+	PublicID  string    `json:"public_id"`
+	UserAlias string    `json:"alias,omitempty"` // opsional: tampilkan alias user
+	Content   string    `json:"content"`
+	PostID    string    `json:"post_id"`
+	CreatedAt time.Time `json:"created_at"`
+}
