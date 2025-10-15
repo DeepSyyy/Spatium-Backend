@@ -19,6 +19,7 @@ func main() {
 		case "seed":
 			fmt.Println("🌱 Running database seeder...")
 			seed.SeedUsers(config.DB)
+			seed.SeedMoodTags(config.DB)
 			fmt.Println("✅ Seeding complete.")
 			return
 		case "serve":

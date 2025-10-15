@@ -6,15 +6,18 @@ Backend ini dirancang untuk menjadi server yang stabil, aman, dan efisien, memas
 
 ---
 
-## Teknologi yang Digunakan
+## 🧠 Teknologi yang Digunakan
 
-Backend Spatium dibangun menggunakan ekosistem JavaScript, dengan fokus pada performa dan skalabilitas:
+Spatium dibangun dengan fokus pada kecepatan, keamanan, dan efisiensi sumber daya, menggunakan ekosistem Golang yang ringan namun powerful.
 
-- **Node.js & Express.js**: Menggunakan Node.js sebagai runtime dan Express.js sebagai framework web untuk membangun API RESTful yang cepat dan terstruktur.
-- **MongoDB & Mongoose**: Mengandalkan MongoDB sebagai database NoSQL yang fleksibel, dikelola dengan Mongoose untuk memodelkan data secara efektif.
-- **JWT (JSON Web Tokens)**: Untuk mengelola autentikasi pengguna secara aman, memastikan hanya pengguna yang sah yang bisa mengakses data mereka.
-- **Socket.IO**: Untuk mengaktifkan komunikasi real-time, mendukung fitur komunitas di mana pengguna bisa berinteraksi secara instan.
-- **TensorFlow.js**: Integrasi untuk fungsionalitas AI, seperti memberikan respons empatik berdasarkan pemahaman emosi pengguna.
+### ⚙️ Backend
+
+- **Go (Golang)**: Bahasa utama untuk membangun backend yang efisien, concurrency-friendly, dan mudah di-deploy.
+- **Fiber**: Web framework modern berbasis fasthttp yang sangat cepat untuk membangun API RESTful.
+- **GORM**: ORM (Object Relational Mapping) untuk mengelola relasi data dengan PostgreSQL secara elegan.
+- **PostgreSQL**: Sistem basis data relasional yang andal dengan dukungan kuat untuk relasi antar entitas seperti users, posts, dan mood tags.
+- **Go-Migrate**: Digunakan untuk manajemen versi skema database dan migrasi otomatis antar environment.
+- **JWT (JSON Web Token)**: Menangani autentikasi anonim secara aman melalui token unik yang merepresentasikan identitas pengguna.
 
 ---
 

@@ -7,27 +7,27 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func GenerateToken(userID string, alias string) (string, error) {
+func GenerateToken(publicID string, alias string) (string, error) {
 	secret := config.AppConfig.JWTSecret
 	duration, _ := time.ParseDuration(config.AppConfig.JWTExpire)
 
 	claims := jwt.MapClaims{
-		"user_id": userID,
-		"alias":   alias,
-		"exp":     time.Now().Add(duration).Unix(),
+		"public_id": publicID,
+		"alias":     alias,
+		"exp":       time.Now().Add(duration).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(secret))
 }
 
-func GenerateRefreshToken(userID string) (string, error) {
+func GenerateRefreshToken(publicID string) (string, error) {
 	secret := config.AppConfig.JWTSecret
 	duration, _ := time.ParseDuration(config.AppConfig.JWTResfreshToken)
 
 	claims := jwt.MapClaims{
-		"user_id": userID,
-		"exp":     time.Now().Add(duration).Unix(),
+		"public_id": publicID,
+		"exp":       time.Now().Add(duration).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS mood_tags (
+    internal_id BIGSERIAL PRIMARY KEY,
+    mood_name VARCHAR(50) NOT NULL UNIQUE,
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
