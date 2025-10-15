@@ -30,7 +30,7 @@ type Config struct {
 }
 
 func LoadEnv() {
-	// Hanya load .env kalau file-nya memang ada (untuk lokal)
+	// Only load .env file if it exists (for local development)
 	if _, err := os.Stat(".env"); err == nil {
 		if err := godotenv.Load(); err != nil {
 			log.Println("⚠️  Failed to load .env file:", err)
@@ -41,16 +41,49 @@ func LoadEnv() {
 		log.Println("🌐 Using environment variables from system (Railway/Production)")
 	}
 
+	// --- Validate critical variables ---
+	dbHost := getEnv("DB_HOST", "")
+	if dbHost == "" {
+		log.Fatalf("❌ DB_HOST environment variable is not set. Cannot start the application.")
+	}
+
+	dbUser := getEnv("DB_USER", "")
+	if dbUser == "" {
+		log.Fatalf("❌ DB_USER environment variable is not set. Cannot start the application.")
+	}
+
+	dbPass := getEnv("DB_PASSWORD", "")
+	if dbPass == "" {
+		log.Fatalf("❌ DB_PASSWORD environment variable is not set. Cannot start the application.")
+	}
+
+	dbName := getEnv("DB_NAME", "")
+	if dbName == "" {
+		log.Fatalf("❌ DB_NAME environment variable is not set. Cannot start the application.")
+	}
+
+	// --- Parse time durations ---
+	jwtExpire, err := time.ParseDuration(getEnv("JWT_EXPIRED", "1h"))
+	if err != nil {
+		log.Fatalf("❌ Failed to parse JWT_EXPIRED duration: %v", err)
+	}
+
+	jwtRefreshToken, err := time.ParseDuration(getEnv("REFRESH_TOKEN_EXPIRED", "24h"))
+	if err != nil {
+		log.Fatalf("❌ Failed to parse REFRESH_TOKEN_EXPIRED duration: %v", err)
+	}
+
+	// --- Populate AppConfig ---
 	AppConfig = &Config{
 		AppPort:          getEnv("APP_PORT", "8080"),
-		DBHost:           getEnv("DB_HOST", ""),
-		DBPort:           getEnv("DB_PORT", ""),
-		DBUser:           getEnv("DB_USER", ""),
-		DBPass:           getEnv("DB_PASSWORD", ""),
-		DBName:           getEnv("DB_NAME", ""),
+		DBHost:           dbHost,
+		DBPort:           getEnv("DB_PORT", "5432"),
+		DBUser:           dbUser,
+		DBPass:           dbPass,
+		DBName:           dbName,
 		JWTSecret:        getEnv("JWT_SECRET", ""),
-		JWTResfreshToken: getEnv("REFRESH_TOKEN_EXPIRED", "24h"),
-		JWTExpire:        getEnv("JWT_EXPIRED", "1h"),
+		JWTResfreshToken: jwtRefreshToken.String(),
+		JWTExpire:        jwtExpire.String(),
 		OpenAIAPIKey:     getEnv("OPENAI_API_KEY", ""),
 	}
 }
