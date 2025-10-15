@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/DeepSyyy/Spatium-Backend/config"
@@ -13,6 +14,9 @@ func main() {
 	// Load environment variables and connect to the database
 	config.LoadEnv()
 	config.ConnectDB()
+
+	log.Println("📦 Environment PORT:", os.Getenv("PORT"))
+	log.Println("📦 Config APP_PORT:", config.AppConfig.AppPort)
 
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
