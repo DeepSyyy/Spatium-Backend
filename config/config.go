@@ -30,18 +30,25 @@ type Config struct {
 }
 
 func LoadEnv() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Println("No .env file found")
+	// Hanya load .env kalau file-nya memang ada (untuk lokal)
+	if _, err := os.Stat(".env"); err == nil {
+		if err := godotenv.Load(); err != nil {
+			log.Println("⚠️  Failed to load .env file:", err)
+		} else {
+			log.Println("✅ Loaded .env file for local environment")
+		}
+	} else {
+		log.Println("🌐 Using environment variables from system (Railway/Production)")
 	}
+
 	AppConfig = &Config{
 		AppPort:          getEnv("APP_PORT", "8080"),
-		DBHost:           getEnv("DB_HOST", "localhost"),
-		DBPort:           getEnv("DB_PORT", "5432"),
-		DBUser:           getEnv("DB_USER", "postgres"),
-		DBPass:           getEnv("DB_PASSWORD", "password"),
-		DBName:           getEnv("DB_NAME", "mydb"),
-		JWTSecret:        getEnv("JWT_SECRET", "your_jwt_secret_key"),
+		DBHost:           getEnv("DB_HOST", ""),
+		DBPort:           getEnv("DB_PORT", ""),
+		DBUser:           getEnv("DB_USER", ""),
+		DBPass:           getEnv("DB_PASSWORD", ""),
+		DBName:           getEnv("DB_NAME", ""),
+		JWTSecret:        getEnv("JWT_SECRET", ""),
 		JWTResfreshToken: getEnv("REFRESH_TOKEN_EXPIRED", "24h"),
 		JWTExpire:        getEnv("JWT_EXPIRED", "1h"),
 		OpenAIAPIKey:     getEnv("OPENAI_API_KEY", ""),
