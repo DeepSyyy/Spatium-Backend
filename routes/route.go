@@ -20,5 +20,10 @@ func Setup(app *fiber.App, uc *controllers.UserController, pc *controllers.PostC
 	app.Post("/api/v1/login", uc.Login)
 
 	//post routes
-	app.Post("/api/v1/post", middlewares.JWTProtected, pc.CreatePost)
+	app.Post("/api/v1/posts", middlewares.JWTProtected, pc.CreatePost)
+	app.Get("/api/v1/posts", middlewares.JWTProtected, pc.GetAllPosts)
+	app.Get("/api/v1/posts/:post_id", middlewares.JWTProtected, pc.GetPostDetail)
+	app.Get("/api/v1/user/posts", middlewares.JWTProtected, pc.GetPostsByUser)
+	app.Put("/api/v1/posts/:post_id", middlewares.JWTProtected, pc.UpdatePost)
+	app.Delete("/api/v1/posts/:post_id", middlewares.JWTProtected, pc.DeletePost)
 }
