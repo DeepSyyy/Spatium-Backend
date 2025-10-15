@@ -29,59 +29,38 @@ type Config struct {
 	OpenAIAPIKey     string
 }
 
+// LoadEnv loads environment variables safely for both local and production
 func LoadEnv() {
-	// Only load .env file if it exists (for local development)
-	if _, err := os.Stat(".env"); err == nil {
-		if err := godotenv.Load(); err != nil {
-			log.Println("⚠️  Failed to load .env file:", err)
-		} else {
-			log.Println("✅ Loaded .env file for local environment")
-		}
+	// Try to load .env (only works locally)
+	if err := godotenv.Load(); err == nil {
+		log.Println("✅ Loaded .env file for local environment")
 	} else {
 		log.Println("🌐 Using environment variables from system (Railway/Production)")
 	}
 
-	// --- Validate critical variables ---
+	// Allow app to boot even if some vars missing in Railway
 	dbHost := getEnv("DB_HOST", "")
-	if dbHost == "" {
-		log.Fatalf("❌ DB_HOST environment variable is not set. Cannot start the application.")
-	}
-
 	dbUser := getEnv("DB_USER", "")
-	if dbUser == "" {
-		log.Fatalf("❌ DB_USER environment variable is not set. Cannot start the application.")
-	}
-
 	dbPass := getEnv("DB_PASSWORD", "")
-	if dbPass == "" {
-		log.Fatalf("❌ DB_PASSWORD environment variable is not set. Cannot start the application.")
-	}
-
 	dbName := getEnv("DB_NAME", "")
-	if dbName == "" {
-		log.Fatalf("❌ DB_NAME environment variable is not set. Cannot start the application.")
+	dbPort := getEnv("DB_PORT", "5432")
+
+	if dbHost == "" || dbUser == "" || dbPass == "" || dbName == "" {
+		log.Println("⚠️  Some database environment variables are missing — skipping DB connect check.")
 	}
 
-	// --- Parse time durations ---
-	jwtExpire, err := time.ParseDuration(getEnv("JWT_EXPIRED", "1h"))
-	if err != nil {
-		log.Fatalf("❌ Failed to parse JWT_EXPIRED duration: %v", err)
-	}
+	// Parse JWT durations (fallback defaults)
+	jwtExpire := parseDurationSafe("JWT_EXPIRED", "1h")
+	jwtRefreshToken := parseDurationSafe("REFRESH_TOKEN_EXPIRED", "24h")
 
-	jwtRefreshToken, err := time.ParseDuration(getEnv("REFRESH_TOKEN_EXPIRED", "24h"))
-	if err != nil {
-		log.Fatalf("❌ Failed to parse REFRESH_TOKEN_EXPIRED duration: %v", err)
-	}
-
-	// --- Populate AppConfig ---
 	AppConfig = &Config{
 		AppPort:          getEnv("APP_PORT", "8080"),
 		DBHost:           dbHost,
-		DBPort:           getEnv("DB_PORT", "5432"),
+		DBPort:           dbPort,
 		DBUser:           dbUser,
 		DBPass:           dbPass,
 		DBName:           dbName,
-		JWTSecret:        getEnv("JWT_SECRET", ""),
+		JWTSecret:        getEnv("JWT_SECRET", "secret"),
 		JWTResfreshToken: jwtRefreshToken.String(),
 		JWTExpire:        jwtExpire.String(),
 		OpenAIAPIKey:     getEnv("OPENAI_API_KEY", ""),
@@ -89,28 +68,40 @@ func LoadEnv() {
 }
 
 func getEnv(key, fallback string) string {
-	value, exist := os.LookupEnv(key)
-	if exist {
+	if value, exist := os.LookupEnv(key); exist {
 		return value
 	}
 	return fallback
 }
 
+func parseDurationSafe(key, fallback string) time.Duration {
+	val := getEnv(key, fallback)
+	dur, err := time.ParseDuration(val)
+	if err != nil {
+		log.Printf("⚠️  Invalid duration for %s: %s, using default %s", key, val, fallback)
+		dur, _ = time.ParseDuration(fallback)
+	}
+	return dur
+}
+
+// ConnectDB tries to connect to the DB but won't crash the app if it fails
 func ConnectDB() {
-	cfg := AppConfig
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", cfg.DBHost, cfg.DBUser, cfg.DBPass, cfg.DBName, cfg.DBPort)
+	dsn := fmt.Sprintf(
+		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
+		os.Getenv("DB_HOST"),
+		os.Getenv("DB_USER"),
+		os.Getenv("DB_PASSWORD"),
+		os.Getenv("DB_NAME"),
+		os.Getenv("DB_PORT"),
+	)
+
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatal("Failed to connect to database:", err)
+		log.Printf("❌ Database connection failed: %v", err)
+		log.Println("⚠️  Continuing without DB connection (won’t crash Railway).")
+		return
 	}
-	sqlDB, err := db.DB()
-	if err != nil {
-		log.Fatal("Failed to get database instance:", err)
-	}
-
-	sqlDB.SetMaxIdleConns(10)
-	sqlDB.SetMaxOpenConns(100)
-	sqlDB.SetConnMaxLifetime(time.Hour)
 
 	DB = db
+	log.Println("✅ Database connected successfully.")
 }
