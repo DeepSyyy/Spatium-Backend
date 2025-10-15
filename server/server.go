@@ -2,6 +2,7 @@ package server
 
 import (
 	"log"
+	"os"
 
 	"github.com/DeepSyyy/Spatium-Backend/config"
 	"github.com/DeepSyyy/Spatium-Backend/controllers"
@@ -12,31 +13,30 @@ import (
 )
 
 func Start() {
-	// Initialize Fiber app
 	app := fiber.New()
 
-	// Setup for User module
 	userRepo := repositories.NewUserRepository()
 	userService := services.NewUserService(userRepo)
 	userController := controllers.NewUserController(userService)
 
-	// post module setup
 	postRepo := repositories.NewPostRepository(config.DB)
 	postService := services.NewPostService(postRepo)
 	postController := controllers.NewPostController(postService)
 
-	// comment module setup
 	commentRepo := repositories.NewCommentRepository(config.DB)
 	commentService := services.NewCommentService(commentRepo)
 	commentController := controllers.NewCommentController(commentService)
 
-	// Setup routes
 	routes.Setup(app, userController, postController, commentController)
 
-	// Setup port
-	port := config.AppConfig.AppPort
-	log.Print("Server running on port: " + port)
+	// ✅ FIX: Prioritize Railway PORT
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = config.AppConfig.AppPort // fallback to .env (local)
+	}
 
-	// Start the server
-	log.Fatal(app.Listen(":" + port))
+	log.Println("🚀 Server running on port:", port)
+	if err := app.Listen("0.0.0.0:" + port); err != nil {
+		log.Fatal(err)
+	}
 }
