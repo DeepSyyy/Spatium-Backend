@@ -1,10 +1,12 @@
 package services
 
 import (
+	"log"
 	"time"
 
 	"github.com/DeepSyyy/Spatium-Backend/models"
 	"github.com/DeepSyyy/Spatium-Backend/repositories"
+	"github.com/DeepSyyy/Spatium-Backend/utils"
 	"github.com/google/uuid"
 )
 
@@ -26,12 +28,17 @@ func NewPostService(repo repositories.PostRepository) PostService {
 }
 
 func (s *postService) Create(userID int64, moodTag int64, content string) (*models.Post, error) {
+	aiResp, err := utils.GenerateEmpathicResponse(content, int(moodTag))
+	if err != nil {
+		log.Println("Error generating AI response:", err)
+		return nil, err
+	}
 	post := &models.Post{
 		PublicID:   uuid.New(),
 		UserID:     userID,
 		MoodTagID:  moodTag,
 		Content:    content,
-		AiResponse: "",
+		AiResponse: aiResp,
 		CreatedAt:  time.Now(),
 	}
 

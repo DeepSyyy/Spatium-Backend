@@ -44,6 +44,7 @@ func LoadEnv() {
 		JWTSecret:        getEnv("JWT_SECRET", "your_jwt_secret_key"),
 		JWTResfreshToken: getEnv("REFRESH_TOKEN_EXPIRED", "24h"),
 		JWTExpire:        getEnv("JWT_EXPIRED", "1h"),
+		OpenAIAPIKey:     getEnv("OPENAI_API_KEY", ""),
 	}
 }
 
