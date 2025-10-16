@@ -10,9 +10,8 @@ import (
 )
 
 func Setup(app *fiber.App, uc *controllers.UserController, pc *controllers.PostController, cc *controllers.CommentController) {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	if err := godotenv.Load(); err != nil {
+		log.Println("🌐 Using environment variables from system (Railway/Production)")
 	}
 
 	//auth routes
