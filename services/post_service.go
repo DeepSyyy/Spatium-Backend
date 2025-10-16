@@ -15,6 +15,7 @@ type PostService interface {
 	GetAll() ([]models.Post, error)
 	GetPostDetail(publicID string) (*models.Post, error)
 	GetPostsByUserID(userID int64) ([]models.Post, error)
+	GetPostInternalIDByPublicID(publicID string) (int64, error)
 	Update(publicID string, updatedPost *models.Post) error
 	Delete(publicID string) error
 }
@@ -67,4 +68,8 @@ func (s *postService) Update(publicID string, updatedPost *models.Post) error {
 
 func (s *postService) Delete(publicID string) error {
 	return s.repo.Delete(publicID)
+}
+
+func (s *postService) GetPostInternalIDByPublicID(publicID string) (int64, error) {
+	return s.repo.GetPostInternalIDByPublicID(publicID)
 }

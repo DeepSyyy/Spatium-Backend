@@ -8,11 +8,12 @@ import (
 )
 
 type PostController struct {
-	service services.PostService
+	postService    services.PostService
+	commentService services.CommentService
 }
 
-func NewPostController(service services.PostService) *PostController {
-	return &PostController{service}
+func NewPostController(postService services.PostService, commentService services.CommentService) *PostController {
+	return &PostController{postService: postService, commentService: commentService}
 }
 
 // CreatePost handles POST /posts
@@ -41,12 +42,12 @@ func (c *PostController) CreatePost(ctx *fiber.Ctx) error {
 		req.MoodTag = 1 // default mood
 	}
 
-	post, err := c.service.Create(userID, req.MoodTag, req.Content)
+	post, err := c.postService.Create(userID, req.MoodTag, req.Content)
 	if err != nil {
 		return utils.BadRequest(ctx, "Failed to create post", err.Error())
 	}
 
-	resp := models.PostResponse{
+	postResponse := models.PostResponse{
 		PublicID:   post.PublicID.String(),
 		Content:    post.Content,
 		AiResponse: post.AiResponse,
@@ -54,26 +55,34 @@ func (c *PostController) CreatePost(ctx *fiber.Ctx) error {
 		CreatedAt:  post.CreatedAt,
 	}
 
+	resp := fiber.Map{
+		"post": postResponse,
+	}
+
 	return utils.Success(ctx, "Post created successfully", resp)
 }
 
 // GetAllPosts handles GET /posts
 func (c *PostController) GetAllPosts(ctx *fiber.Ctx) error {
-	posts, err := c.service.GetAll()
+	posts, err := c.postService.GetAll()
 	if err != nil {
 		return utils.BadRequest(ctx, "Failed to retrieve posts", err.Error())
 	}
 	// Map ke response tanpa internal_id
-	resp := make([]models.PostResponse, len(posts))
+	postResp := make([]models.PostResponse, len(posts))
 
 	for i, post := range posts {
-		resp[i] = models.PostResponse{
+		postResp[i] = models.PostResponse{
 			PublicID:   post.PublicID.String(),
 			Content:    post.Content,
 			AiResponse: post.AiResponse,
 			MoodTagID:  post.MoodTagID,
 			CreatedAt:  post.CreatedAt,
 		}
+	}
+
+	resp := fiber.Map{
+		"posts": postResp,
 	}
 
 	return utils.Success(ctx, "Posts retrieved successfully", resp)
@@ -86,21 +95,37 @@ func (c *PostController) GetPostDetail(ctx *fiber.Ctx) error {
 		return utils.BadRequest(ctx, "Post ID is required", "")
 	}
 
-	post, err := c.service.GetPostDetail(publicID)
+	post, err := c.postService.GetPostDetail(publicID)
 	if err != nil {
 		return utils.BadRequest(ctx, "Failed to retrieve post", err.Error())
 	}
 
+	postComment := make([]models.CommentResponse, 0)
+	comment, err := c.commentService.GetCommentsByPostID(post.InternalID)
+	if err != nil {
+		return utils.BadRequest(ctx, "Failed to retrieve comments", err.Error())
+	}
+
+	for _, v := range comment {
+		postComment = append(postComment, models.CommentResponse{
+			PublicID:  v.PublicID.String(),
+			PostID:    publicID,
+			Content:   v.Content,
+			CreatedAt: v.CreatedAt,
+		})
+	}
+
 	// Map ke response tanpa internal_id
-	resp := models.PostResponse{
+	postResp := models.PostResponse{
 		PublicID:   post.PublicID.String(),
 		Content:    post.Content,
 		AiResponse: post.AiResponse,
 		MoodTagID:  post.MoodTagID,
+		Comments:   postComment,
 		CreatedAt:  post.CreatedAt,
 	}
 
-	return utils.Success(ctx, "Post retrieved successfully", resp)
+	return utils.Success(ctx, "Post retrieved successfully", postResp)
 }
 
 // GetPostsByUser handles GET /users/:user_id/posts
@@ -110,7 +135,7 @@ func (c *PostController) GetPostsByUser(ctx *fiber.Ctx) error {
 		return utils.BadRequest(ctx, "Unauthorized", "Invalid or missing user ID")
 	}
 
-	posts, err := c.service.GetPostsByUserID(userID)
+	posts, err := c.postService.GetPostsByUserID(userID)
 	if err != nil {
 		return utils.BadRequest(ctx, "Failed to retrieve user's posts", err.Error())
 	}
@@ -157,7 +182,7 @@ func (c *PostController) UpdatePost(ctx *fiber.Ctx) error {
 		req.MoodTag = 1 // default mood
 	}
 	// Cek apakah post ada dan milik user
-	existingPost, err := c.service.GetPostDetail(publicID)
+	existingPost, err := c.postService.GetPostDetail(publicID)
 	if err != nil {
 		return utils.BadRequest(ctx, "Failed to retrieve post", err.Error())
 	}
@@ -170,7 +195,7 @@ func (c *PostController) UpdatePost(ctx *fiber.Ctx) error {
 		Content:   req.Content,
 		MoodTagID: req.MoodTag,
 	}
-	if err := c.service.Update(publicID, updatedPost); err != nil {
+	if err := c.postService.Update(publicID, updatedPost); err != nil {
 		return utils.BadRequest(ctx, "Failed to update post", err.Error())
 	}
 	resp := models.PostResponse{
@@ -193,14 +218,14 @@ func (c *PostController) DeletePost(ctx *fiber.Ctx) error {
 		return utils.BadRequest(ctx, "Unauthorized", "Invalid or missing user ID")
 	}
 	// Cek apakah post ada dan milik user
-	existingPost, err := c.service.GetPostDetail(publicID)
+	existingPost, err := c.postService.GetPostDetail(publicID)
 	if err != nil {
 		return utils.BadRequest(ctx, "Failed to retrieve post", err.Error())
 	}
 	if existingPost.UserID != userID {
 		return utils.BadRequest(ctx, "You are not authorized to delete this post", "")
 	}
-	if err := c.service.Delete(publicID); err != nil {
+	if err := c.postService.Delete(publicID); err != nil {
 		return utils.BadRequest(ctx, "Failed to delete post", err.Error())
 	}
 	return utils.Success(ctx, "Post deleted successfully", nil)

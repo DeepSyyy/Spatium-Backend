@@ -9,7 +9,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func Setup(app *fiber.App, uc *controllers.UserController, pc *controllers.PostController, cc *controllers.CommentController) {
+func Setup(app *fiber.App, uc *controllers.UserController, pc *controllers.PostController, cc *controllers.CommentController, rc *controllers.ReactionController) {
 	if err := godotenv.Load(); err != nil {
 		log.Println("🌐 Using environment variables from system (Railway/Production)")
 	}
@@ -30,4 +30,8 @@ func Setup(app *fiber.App, uc *controllers.UserController, pc *controllers.PostC
 	app.Post("/api/v1/comments", middlewares.JWTProtected, cc.CreateComment)
 	app.Get("/api/v1/posts/:post_id/comments", middlewares.JWTProtected, cc.GetCommentsByPostID)
 	app.Delete("/api/v1/comments/:comment_id", middlewares.JWTProtected, cc.DeleteComment)
+
+	//reaction routes
+	app.Post("/api/v1/posts/:post_id/reactions", middlewares.JWTProtected, rc.ReactToPost)
+	app.Get("/api/v1/posts/:post_id/reactions", middlewares.JWTProtected, rc.GetReactionSummary)
 }

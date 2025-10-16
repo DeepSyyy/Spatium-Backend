@@ -15,19 +15,27 @@ import (
 func Start() {
 	app := fiber.New()
 
+	// Initialize repositories, services, and controllers
 	userRepo := repositories.NewUserRepository()
 	userService := services.NewUserService(userRepo)
 	userController := controllers.NewUserController(userService)
 
-	postRepo := repositories.NewPostRepository(config.DB)
-	postService := services.NewPostService(postRepo)
-	postController := controllers.NewPostController(postService)
-
+	// Initialize Post and Comment components
 	commentRepo := repositories.NewCommentRepository(config.DB)
 	commentService := services.NewCommentService(commentRepo)
-	commentController := controllers.NewCommentController(commentService)
+	postRepo := repositories.NewPostRepository(config.DB)
+	postService := services.NewPostService(postRepo)
 
-	routes.Setup(app, userController, postController, commentController)
+	// Initialize Comment and post controller
+	postController := controllers.NewPostController(postService, commentService)
+	commentController := controllers.NewCommentController(commentService, postService)
+
+	// initialize reaction controller
+	reactionRepo := repositories.NewReactionRepository(config.DB)
+	reactionService := services.NewReactionService(reactionRepo)
+	reactionController := controllers.NewReactionController(reactionService, postService)
+
+	routes.Setup(app, userController, postController, commentController, reactionController)
 
 	// ✅ FIX: Always use Railway's PORT when available
 	port := os.Getenv("PORT")
