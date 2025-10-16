@@ -16,8 +16,9 @@ type User struct {
 }
 
 type UserResponse struct {
-	PublicID  uuid.UUID  `json:"public_id"`
-	Alias     string     `json:"alias"`
-	CreatedAt time.Time  `json:"created_at"`
-	LastLogin *time.Time `json:"last_login,omitempty"`
+	PublicID     uuid.UUID  `json:"public_id"`
+	Alias        string     `json:"alias"`
+	CreatedAt    time.Time  `json:"created_at"`
+	RecoveryCode string     `json:"recovery_code"`
+	LastLogin    *time.Time `json:"last_login,omitempty"`
 }
