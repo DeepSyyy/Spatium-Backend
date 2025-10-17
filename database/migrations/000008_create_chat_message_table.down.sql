@@ -1,0 +1,1 @@
+DELETE TABLE IF EXISTS chat_messages CASCADE;

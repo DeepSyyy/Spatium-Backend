@@ -1,2 +1,9 @@
-# ignore env
-.env
+# ignore all .env files
+*.env
+.env copy
+.gitignore
+# Air live reload config
+.air.toml
+
+# Build folder Air
+/tmp

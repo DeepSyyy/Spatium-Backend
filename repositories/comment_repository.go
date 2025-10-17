@@ -9,7 +9,6 @@ type CommentRepository interface {
 	Create(comment *models.Comment) error
 	GetCommentsByPostID(postID int64) ([]models.Comment, error)
 	Delete(commentID int64) error
-	GetPostInternalIDByPublicID(publicID string) (int64, error)
 	GetCommentInternalIDByPublicID(publicID string) (int64, error)
 	GetCommentsByIDs(commentIDs []int64) ([]models.Comment, error)
 }
@@ -34,15 +33,6 @@ func (r *commentRepository) GetCommentsByPostID(postID int64) ([]models.Comment,
 
 func (r *commentRepository) Delete(commentID int64) error {
 	return r.db.Where("internal_id = ?", commentID).Delete(&models.Comment{}).Error
-}
-
-func (r *commentRepository) GetPostInternalIDByPublicID(publicID string) (int64, error) {
-	var comment models.Post
-	err := r.db.Select("internal_id").Where("public_id = ?", publicID).First(&comment).Error
-	if err != nil {
-		return 0, err
-	}
-	return comment.InternalID, nil
 }
 
 func (r *commentRepository) GetCommentInternalIDByPublicID(publicID string) (int64, error) {

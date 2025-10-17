@@ -16,6 +16,15 @@ func SeedMoodTags(db *gorm.DB) {
 	}
 
 	for _, mood := range defaultMoods {
-		db.FirstOrCreate(&mood, models.MoodTag{MoodName: mood.MoodName})
+		var existing models.MoodTag
+		err := db.Where("mood_name = ?", mood.MoodName).First(&existing).Error
+		if err == nil {
+			continue // already exists, skip
+		}
+		if err := db.Create(&mood).Error; err != nil {
+			println("❌ Failed to seed mood tag:", mood.MoodName, "—", err.Error())
+		} else {
+			println("✅ Seeded mood tag:", mood.MoodName)
+		}
 	}
 }

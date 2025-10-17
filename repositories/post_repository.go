@@ -11,6 +11,7 @@ type PostRepository interface {
 	GetAll() ([]models.Post, error)
 	GetPostDetail(publicID string) (*models.Post, error)
 	GetPostsByUserID(userID int64) ([]models.Post, error)
+	GetPostInternalIDByPublicID(publicID string) (int64, error)
 	Update(publicID string, updatedPost *models.Post) error
 	Delete(publicID string) error
 }
@@ -43,6 +44,15 @@ func (r *postRepository) GetPostsByUserID(userID int64) ([]models.Post, error) {
 	var posts []models.Post
 	err := config.DB.Where("user_internal_id = ?", userID).Find(&posts).Order("created_at desc").Error
 	return posts, err
+}
+
+func (r *postRepository) GetPostInternalIDByPublicID(publicID string) (int64, error) {
+	var comment models.Post
+	err := r.db.Select("internal_id").Where("public_id = ?", publicID).First(&comment).Error
+	if err != nil {
+		return 0, err
+	}
+	return comment.InternalID, nil
 }
 
 func (r *postRepository) Update(publicID string, updatedPost *models.Post) error {

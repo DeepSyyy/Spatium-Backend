@@ -15,19 +15,39 @@ import (
 func Start() {
 	app := fiber.New()
 
+	// Initialize repositories, services, and controllers
 	userRepo := repositories.NewUserRepository()
 	userService := services.NewUserService(userRepo)
 	userController := controllers.NewUserController(userService)
 
-	postRepo := repositories.NewPostRepository(config.DB)
-	postService := services.NewPostService(postRepo)
-	postController := controllers.NewPostController(postService)
-
+	// Initialize Post and Comment components
 	commentRepo := repositories.NewCommentRepository(config.DB)
 	commentService := services.NewCommentService(commentRepo)
-	commentController := controllers.NewCommentController(commentService)
+	postRepo := repositories.NewPostRepository(config.DB)
+	postService := services.NewPostService(postRepo)
 
-	routes.Setup(app, userController, postController, commentController)
+	// Initialize Comment and post controller
+	postController := controllers.NewPostController(postService, commentService)
+	commentController := controllers.NewCommentController(commentService, postService)
+
+	// initialize reaction controller
+	reactionRepo := repositories.NewReactionRepository(config.DB)
+	reactionService := services.NewReactionService(reactionRepo)
+	reactionController := controllers.NewReactionController(reactionService, postService)
+
+	// Repositories
+	chatSessionRepo := repositories.NewChatSessionRepository()
+	chatMessageRepo := repositories.NewChatMessageRepository()
+
+	// Services
+	chatSessionService := services.NewChatSessionService(chatSessionRepo)
+	chatMessageService := services.NewChatMessageService(chatMessageRepo, chatSessionRepo)
+
+	// Controllers
+	chatSessionController := controllers.NewChatSessionController(chatSessionService)
+	chatMessageController := controllers.NewChatMessageController(chatMessageService)
+
+	routes.Setup(app, userController, postController, commentController, reactionController, chatSessionController, chatMessageController)
 
 	// ✅ FIX: Always use Railway's PORT when available
 	port := os.Getenv("PORT")

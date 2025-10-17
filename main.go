@@ -20,12 +20,20 @@ func main() {
 
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
-		case "seed":
+		case "seed-user":
 			fmt.Println("🌱 Running database seeder...")
 			seed.SeedUsers(config.DB)
+			fmt.Println("✅ Seeding complete.")
+			return
+		case "seed-mood-tag":
+			fmt.Println("🌱 Running mood tag seeder...")
 			seed.SeedMoodTags(config.DB)
 			fmt.Println("✅ Seeding complete.")
 			return
+		case "seed-reaction-type":
+			fmt.Println("🌱 Running reaction type seeder...")
+			seed.SeedReactionTypes(config.DB)
+			fmt.Println("✅ Seeding complete.")
 		case "serve":
 			fmt.Println("🚀 Starting server...")
 			server.Start()
