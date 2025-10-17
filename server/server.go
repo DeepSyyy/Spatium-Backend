@@ -35,7 +35,19 @@ func Start() {
 	reactionService := services.NewReactionService(reactionRepo)
 	reactionController := controllers.NewReactionController(reactionService, postService)
 
-	routes.Setup(app, userController, postController, commentController, reactionController)
+	// Repositories
+	chatSessionRepo := repositories.NewChatSessionRepository()
+	chatMessageRepo := repositories.NewChatMessageRepository()
+
+	// Services
+	chatSessionService := services.NewChatSessionService(chatSessionRepo)
+	chatMessageService := services.NewChatMessageService(chatMessageRepo, chatSessionRepo)
+
+	// Controllers
+	chatSessionController := controllers.NewChatSessionController(chatSessionService)
+	chatMessageController := controllers.NewChatMessageController(chatMessageService)
+
+	routes.Setup(app, userController, postController, commentController, reactionController, chatSessionController, chatMessageController)
 
 	// ✅ FIX: Always use Railway's PORT when available
 	port := os.Getenv("PORT")
