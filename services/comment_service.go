@@ -12,7 +12,6 @@ type CommentService interface {
 	Create(userID int64, postID int64, content string) (*models.Comment, error)
 	GetCommentsByPostID(postID int64) ([]models.Comment, error)
 	Delete(commentID int64) error
-	GetPostInternalIDByPublicID(publicID string) (int64, error)
 	GetCommentInternalIDByPublicID(publicID string) (int64, error)
 	GetCommentsByIDs(commentIDs []int64) ([]models.Comment, error)
 }
@@ -47,10 +46,6 @@ func (s *commentService) GetCommentsByPostID(postID int64) ([]models.Comment, er
 
 func (s *commentService) Delete(commentID int64) error {
 	return s.repo.Delete(commentID)
-}
-
-func (s *commentService) GetPostInternalIDByPublicID(publicID string) (int64, error) {
-	return s.repo.GetPostInternalIDByPublicID(publicID)
 }
 
 func (s *commentService) GetCommentsByIDs(commentIDs []int64) ([]models.Comment, error) {

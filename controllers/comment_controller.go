@@ -8,11 +8,12 @@ import (
 )
 
 type CommentController struct {
-	service services.CommentService
+	commentService services.CommentService
+	postService    services.PostService
 }
 
-func NewCommentController(service services.CommentService) *CommentController {
-	return &CommentController{service}
+func NewCommentController(commentService services.CommentService, postService services.PostService) *CommentController {
+	return &CommentController{commentService: commentService, postService: postService}
 }
 
 func (c *CommentController) CreateComment(ctx *fiber.Ctx) error {
@@ -34,11 +35,11 @@ func (c *CommentController) CreateComment(ctx *fiber.Ctx) error {
 		return utils.BadRequest(ctx, "Content cannot be empty", "")
 	}
 	// Convert PostID from public ID (string) to internal ID (int64)
-	postInternalID, err := c.service.GetPostInternalIDByPublicID(req.PostID)
+	postInternalID, err := c.postService.GetPostInternalIDByPublicID(req.PostID)
 	if err != nil {
 		return utils.BadRequest(ctx, "Invalid Post ID", err.Error())
 	}
-	comment, err := c.service.Create(userID, postInternalID, req.Content)
+	comment, err := c.commentService.Create(userID, postInternalID, req.Content)
 	if err != nil {
 		return utils.BadRequest(ctx, "Failed to create comment", err.Error())
 	}
@@ -60,12 +61,12 @@ func (c *CommentController) GetCommentsByPostID(ctx *fiber.Ctx) error {
 	}
 
 	// Convert PostID from public ID (string) to internal ID (int64)
-	postInternalID, err := c.service.GetPostInternalIDByPublicID(postID)
+	postInternalID, err := c.postService.GetPostInternalIDByPublicID(postID)
 	if err != nil {
 		return utils.BadRequest(ctx, "Invalid Post ID", err.Error())
 	}
 
-	comments, err := c.service.GetCommentsByPostID(postInternalID)
+	comments, err := c.commentService.GetCommentsByPostID(postInternalID)
 	if err != nil {
 		return utils.BadRequest(ctx, "Failed to retrieve comments", err.Error())
 	}
@@ -90,12 +91,12 @@ func (c *CommentController) DeleteComment(ctx *fiber.Ctx) error {
 	}
 
 	// Convert CommentID from public ID (string) to internal ID (int64)
-	commentInternalID, err := c.service.GetCommentInternalIDByPublicID(commentID)
+	commentInternalID, err := c.commentService.GetCommentInternalIDByPublicID(commentID)
 	if err != nil {
 		return utils.BadRequest(ctx, "Invalid Comment ID", err.Error())
 	}
 
-	if err := c.service.Delete(commentInternalID); err != nil {
+	if err := c.commentService.Delete(commentInternalID); err != nil {
 		return utils.BadRequest(ctx, "Failed to delete comment", err.Error())
 	}
 

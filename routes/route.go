@@ -9,7 +9,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func Setup(app *fiber.App, uc *controllers.UserController, pc *controllers.PostController, cc *controllers.CommentController) {
+func Setup(app *fiber.App, uc *controllers.UserController, pc *controllers.PostController, cc *controllers.CommentController, rc *controllers.ReactionController, chatSessionController *controllers.ChatSessionController, chatMessageController *controllers.ChatMessageController) {
 	if err := godotenv.Load(); err != nil {
 		log.Println("🌐 Using environment variables from system (Railway/Production)")
 	}
@@ -30,4 +30,23 @@ func Setup(app *fiber.App, uc *controllers.UserController, pc *controllers.PostC
 	app.Post("/api/v1/comments", middlewares.JWTProtected, cc.CreateComment)
 	app.Get("/api/v1/posts/:post_id/comments", middlewares.JWTProtected, cc.GetCommentsByPostID)
 	app.Delete("/api/v1/comments/:comment_id", middlewares.JWTProtected, cc.DeleteComment)
+
+	//reaction routes
+	app.Post("/api/v1/posts/:post_id/reactions", middlewares.JWTProtected, rc.ReactToPost)
+	app.Get("/api/v1/posts/:post_id/reactions", middlewares.JWTProtected, rc.GetReactionSummary)
+
+	//chat session routes
+	// =====================================
+	// 💬 SESSION ROUTES
+	// =====================================
+	app.Post("/api/v1/chat/session", middlewares.JWTProtected, chatSessionController.CreateSession)       // create session
+	app.Get("/api/v1/chat/session", middlewares.JWTProtected, chatSessionController.GetUserSessions)      // get all sessions
+	app.Delete("/api/v1/chat/session/:id", middlewares.JWTProtected, chatSessionController.DeleteSession) // delete session
+
+	// =====================================
+	// 💭 MESSAGE ROUTES
+	// =====================================
+	app.Post("/api/v1/chat/:session_id", middlewares.JWTProtected, chatMessageController.Create)                       // send message (user)
+	app.Get("/api/v1/chat/:session_id/messages", middlewares.JWTProtected, chatMessageController.GetMessagesBySession) // get all messages
+	app.Get("/api/v1/chat/:session_id/last", middlewares.JWTProtected, chatMessageController.GetLastMessages)          // get last messages
 }
