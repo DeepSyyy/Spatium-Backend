@@ -15,39 +15,34 @@ import (
 func Start() {
 	app := fiber.New()
 
-	// Initialize repositories, services, and controllers
-	userRepo := repositories.NewUserRepository()
-	userService := services.NewUserService(userRepo)
-	userController := controllers.NewUserController(userService)
-
-	// Initialize Post and Comment components
-	commentRepo := repositories.NewCommentRepository(config.DB)
-	commentService := services.NewCommentService(commentRepo)
-	postRepo := repositories.NewPostRepository(config.DB)
-	postService := services.NewPostService(postRepo)
-
-	// Initialize Comment and post controller
-	postController := controllers.NewPostController(postService, commentService)
-	commentController := controllers.NewCommentController(commentService, postService)
-
-	// initialize reaction controller
-	reactionRepo := repositories.NewReactionRepository(config.DB)
-	reactionService := services.NewReactionService(reactionRepo)
-	reactionController := controllers.NewReactionController(reactionService, postService)
-
 	// Repositories
+	userRepo := repositories.NewUserRepository()
+	commentRepo := repositories.NewCommentRepository(config.DB)
 	chatSessionRepo := repositories.NewChatSessionRepository()
 	chatMessageRepo := repositories.NewChatMessageRepository()
+	postRepo := repositories.NewPostRepository(config.DB)
+	reactionRepo := repositories.NewReactionRepository(config.DB)
+	dailyMoodRepo := repositories.NewDailyMoodRepository(config.DB)
 
 	// Services
+	userService := services.NewUserService(userRepo)
+	commentService := services.NewCommentService(commentRepo)
 	chatSessionService := services.NewChatSessionService(chatSessionRepo)
 	chatMessageService := services.NewChatMessageService(chatMessageRepo, chatSessionRepo)
+	postService := services.NewPostService(postRepo)
+	reactionService := services.NewReactionService(reactionRepo)
+	dailyMoodService := services.NewDailyMoodService(dailyMoodRepo)
 
 	// Controllers
+	userController := controllers.NewUserController(userService)
 	chatSessionController := controllers.NewChatSessionController(chatSessionService)
 	chatMessageController := controllers.NewChatMessageController(chatMessageService)
+	commentController := controllers.NewCommentController(commentService, postService)
+	postController := controllers.NewPostController(postService, commentService)
+	reactionController := controllers.NewReactionController(reactionService, postService)
+	dailyMoodController := controllers.NewDailyMoodController(dailyMoodService)
 
-	routes.Setup(app, userController, postController, commentController, reactionController, chatSessionController, chatMessageController)
+	routes.Setup(app, userController, postController, commentController, reactionController, chatSessionController, chatMessageController, dailyMoodController)
 
 	// ✅ FIX: Always use Railway's PORT when available
 	port := os.Getenv("PORT")

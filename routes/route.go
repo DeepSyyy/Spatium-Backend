@@ -9,7 +9,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func Setup(app *fiber.App, uc *controllers.UserController, pc *controllers.PostController, cc *controllers.CommentController, rc *controllers.ReactionController, chatSessionController *controllers.ChatSessionController, chatMessageController *controllers.ChatMessageController) {
+func Setup(app *fiber.App, uc *controllers.UserController, pc *controllers.PostController, cc *controllers.CommentController, rc *controllers.ReactionController, chatSessionController *controllers.ChatSessionController, chatMessageController *controllers.ChatMessageController, dailyMoodController *controllers.DailyMoodController) {
 	if err := godotenv.Load(); err != nil {
 		log.Println("🌐 Using environment variables from system (Railway/Production)")
 	}
@@ -49,4 +49,10 @@ func Setup(app *fiber.App, uc *controllers.UserController, pc *controllers.PostC
 	app.Post("/api/v1/chat/:session_id", middlewares.JWTProtected, chatMessageController.Create)                       // send message (user)
 	app.Get("/api/v1/chat/:session_id/messages", middlewares.JWTProtected, chatMessageController.GetMessagesBySession) // get all messages
 	app.Get("/api/v1/chat/:session_id/last", middlewares.JWTProtected, chatMessageController.GetLastMessages)          // get last messages
+
+	//daily mood routes
+	app.Post("/api/v1/moods", middlewares.JWTProtected, dailyMoodController.CreateOrUpdate)
+	app.Get("/api/v1/moods/today", middlewares.JWTProtected, dailyMoodController.GetTodayMood)
+	app.Get("/api/v1/moods/weekly", middlewares.JWTProtected, dailyMoodController.GetWeeklyMoods)
+
 }
