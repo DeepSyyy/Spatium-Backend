@@ -1,0 +1,1 @@
+DELETE TABLE IF EXISTS ai_reflections CASCADE;

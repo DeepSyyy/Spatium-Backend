@@ -1,0 +1,1 @@
+DELETE TABLE IF EXISTS daily_moods CASCADE;
