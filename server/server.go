@@ -23,6 +23,7 @@ func Start() {
 	postRepo := repositories.NewPostRepository(config.DB)
 	reactionRepo := repositories.NewReactionRepository(config.DB)
 	dailyMoodRepo := repositories.NewDailyMoodRepository(config.DB)
+	aireflectionRepo := repositories.NewAIReflectionRepository(config.DB)
 
 	// Services
 	userService := services.NewUserService(userRepo)
@@ -31,7 +32,8 @@ func Start() {
 	chatMessageService := services.NewChatMessageService(chatMessageRepo, chatSessionRepo)
 	postService := services.NewPostService(postRepo)
 	reactionService := services.NewReactionService(reactionRepo)
-	dailyMoodService := services.NewDailyMoodService(dailyMoodRepo)
+	aiReflectionService := services.NewAIReflectionService(aireflectionRepo)
+	dailyMoodService := services.NewDailyMoodService(dailyMoodRepo, aiReflectionService)
 
 	// Controllers
 	userController := controllers.NewUserController(userService)
@@ -41,8 +43,9 @@ func Start() {
 	postController := controllers.NewPostController(postService, commentService)
 	reactionController := controllers.NewReactionController(reactionService, postService)
 	dailyMoodController := controllers.NewDailyMoodController(dailyMoodService)
+	aiReflectionController := controllers.NewAIReflectionController(aiReflectionService)
 
-	routes.Setup(app, userController, postController, commentController, reactionController, chatSessionController, chatMessageController, dailyMoodController)
+	routes.Setup(app, userController, postController, commentController, reactionController, chatSessionController, chatMessageController, dailyMoodController, aiReflectionController)
 
 	// ✅ FIX: Always use Railway's PORT when available
 	port := os.Getenv("PORT")
