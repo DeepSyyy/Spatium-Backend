@@ -26,10 +26,3 @@ jobs:
 
       - name: Test
         run: go test ./... -v
-
-      - name: Deploy to Railway
-        run: |
-          npm install -g @railway/cli
-          railway up --service "spatium-backend" --detach --ci
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
