@@ -1,13 +1,12 @@
-name: Go CI/CD to Vercel
+name: CI/CD to Railway
 
 on:
   push:
-    branches: [master, deployment]
-  pull_request:
-    branches: [master, deployment]
+    branches:
+      - deployment
 
 jobs:
-  build-test-deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -22,14 +21,15 @@ jobs:
       - name: Install dependencies
         run: go mod tidy
 
-      - name: Build
-        run: go build ./...
+      - name: Build Go app
+        run: go build -o app .
 
-      - name: Run tests
+      - name: Test
         run: go test ./... -v
 
-      - name: Install Vercel CLI
-        run: npm install -g vercel
-
-      - name: Deploy to Vercel
-        run: vercel --prod --token=${{ secrets.VERCEL_TOKEN }} --yes
+      - name: Deploy to Railway
+        run: |
+          npm install -g @railway/cli
+          railway up --service "spatium-backend" --detach --ci
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
