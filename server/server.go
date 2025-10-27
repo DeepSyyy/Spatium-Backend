@@ -16,7 +16,7 @@ func Start() {
 	app := fiber.New()
 
 	// Repositories
-	userRepo := repositories.NewUserRepository()
+	userRepo := repositories.NewUserRepository(config.DB)
 	commentRepo := repositories.NewCommentRepository(config.DB)
 	chatSessionRepo := repositories.NewChatSessionRepository()
 	chatMessageRepo := repositories.NewChatMessageRepository()
