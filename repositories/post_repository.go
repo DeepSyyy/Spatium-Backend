@@ -1,7 +1,6 @@
 package repositories
 
 import (
-	"github.com/DeepSyyy/Spatium-Backend/config"
 	"github.com/DeepSyyy/Spatium-Backend/models"
 	"gorm.io/gorm"
 )
@@ -42,7 +41,7 @@ func (r *postRepository) GetPostDetail(publicID string) (*models.Post, error) {
 
 func (r *postRepository) GetPostsByUserID(userID int64) ([]models.Post, error) {
 	var posts []models.Post
-	err := config.DB.Where("user_internal_id = ?", userID).Find(&posts).Order("created_at desc").Error
+	err := r.db.Where("user_internal_id = ?", userID).Order("created_at desc").Find(&posts).Error
 	return posts, err
 }
 

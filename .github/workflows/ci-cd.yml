@@ -4,10 +4,32 @@ on:
   push:
     branches:
       - deployment
+      - develop/master
+      - master
 
 jobs:
-  build-and-deploy:
+  test:
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Install dependencies
+        run: go mod tidy
+
+      - name: Run Tests
+        run: go test ./... -v
+
+  build-and-deploy:
+    # 👇 hanya dijalankan jika di branch deployment
+    if: github.ref == 'refs/heads/deployment'
+    runs-on: ubuntu-latest
+    needs: test # pastikan test lulus dulu
 
     steps:
       - name: Checkout repository
@@ -23,6 +45,3 @@ jobs:
 
       - name: Build Go app
         run: go build -o app .
-
-      - name: Test
-        run: go test ./... -v
