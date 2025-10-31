@@ -110,11 +110,9 @@ func TestGetReactionTypeIDByEmoji(t *testing.T) {
 	rows := sqlmock.NewRows([]string{"internal_id"}).
 		AddRow(1)
 
-	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(`SELECT "internal_id" FROM "reaction_types" WHERE emoji = $1 ORDER BY "reaction_types"."internal_id" LIMIT $2`)).
 		WithArgs("👍", 1).
 		WillReturnRows(rows)
-	mock.ExpectCommit()
 
 	reactionTypeID, err := repo.GetReactionTypeIDByEmoji("👍")
 
