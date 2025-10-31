@@ -25,6 +25,19 @@ jobs:
       - name: Run Tests
         run: go test ./... -v
 
+      - name: Run Tests with Coverage
+        run: go test ./... -v -coverprofile=coverage.out -covermode=atomic
+
+      - name: Check Coverage Threshold
+        run: |
+          threshold=70
+          coverage=$(go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
+          echo "Coverage is $coverage%"
+          if (( $(echo "$coverage < $threshold" | bc -l) )); then
+            echo "❌ Coverage below threshold ($threshold%)"
+            exit 1
+          fi
+
   build-and-deploy:
     # 👇 hanya dijalankan jika di branch deployment
     if: github.ref == 'refs/heads/deployment'
@@ -45,3 +58,9 @@ jobs:
 
       - name: Build Go app
         run: go build -o app .
+
+      - name: Create Tag
+        run: |
+          VERSION=v$(date +'%Y.%m.%d.%H%M')
+          git tag $VERSION
+          git push origin $VERSION
