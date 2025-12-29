@@ -26,10 +26,10 @@ WORKDIR /root/
 COPY --from=builder /app/main .
 
 # Expose API port
-EXPOSE 4419
+EXPOSE 8080
 
 # Environment variables (Railway will override this if needed)
-ENV PORT=4419
+ENV PORT=8080
 
 # Run the app
 CMD ["./main", "serve"]

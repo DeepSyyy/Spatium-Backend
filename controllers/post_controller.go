@@ -8,12 +8,19 @@ import (
 )
 
 type PostController struct {
-	postService    services.PostService
-	commentService services.CommentService
+	postService     services.PostService
+	commentService  services.CommentService
+	reactionService services.ReactionService
+	blockService    services.BlockService
 }
 
-func NewPostController(postService services.PostService, commentService services.CommentService) *PostController {
-	return &PostController{postService: postService, commentService: commentService}
+func NewPostController(postService services.PostService, commentService services.CommentService, reactionService services.ReactionService, blockService services.BlockService) *PostController {
+	return &PostController{
+		postService:     postService,
+		commentService:  commentService,
+		reactionService: reactionService,
+		blockService:    blockService,
+	}
 }
 
 // CreatePost handles POST /posts
@@ -42,21 +49,29 @@ func (c *PostController) CreatePost(ctx *fiber.Ctx) error {
 		req.MoodTag = 1 // default mood
 	}
 
-	post, err := c.postService.Create(userID, req.MoodTag, req.Content)
+	result, err := c.postService.Create(userID, req.MoodTag, req.Content)
 	if err != nil {
 		return utils.BadRequest(ctx, "Failed to create post", err.Error())
 	}
 
 	postResponse := models.PostResponse{
-		PublicID:   post.PublicID.String(),
-		Content:    post.Content,
-		AiResponse: post.AiResponse,
-		MoodTagID:  post.MoodTagID,
-		CreatedAt:  post.CreatedAt,
+		PublicID:   result.Post.PublicID.String(),
+		Content:    result.Post.Content,
+		AiResponse: result.Post.AiResponse,
+		MoodTagID:  result.Post.MoodTagID,
+		CreatedAt:  result.Post.CreatedAt,
 	}
 
 	resp := fiber.Map{
 		"post": postResponse,
+	}
+
+	// If crisis indicators were detected, include support message
+	if result.ContainsCrisisIndicator {
+		resp["crisis_support"] = fiber.Map{
+			"detected": true,
+			"message":  result.CrisisSupportMessage,
+		}
 	}
 
 	return utils.Success(ctx, "Post created successfully", resp)
@@ -64,21 +79,48 @@ func (c *PostController) CreatePost(ctx *fiber.Ctx) error {
 
 // GetAllPosts handles GET /posts
 func (c *PostController) GetAllPosts(ctx *fiber.Ctx) error {
-	posts, err := c.postService.GetAll()
+	// Get current user ID from JWT token
+	currentUserID, _ := ctx.Locals("user_id").(int64)
+
+	// Get list of blocked user IDs to filter out their posts
+	blockedUserIDs, _ := c.blockService.GetBlockedUserIDs(currentUserID)
+
+	// Get posts, excluding blocked users' posts
+	posts, err := c.postService.GetAllFiltered(blockedUserIDs)
 	if err != nil {
 		return utils.BadRequest(ctx, "Failed to retrieve posts", err.Error())
 	}
 	// Map ke response tanpa internal_id
-	postResp := make([]models.PostResponse, len(posts))
+	postResp := make([]models.PostResponse, 0, len(posts))
 
-	for i, post := range posts {
-		postResp[i] = models.PostResponse{
-			PublicID:   post.PublicID.String(),
-			Content:    post.Content,
-			AiResponse: post.AiResponse,
-			MoodTagID:  post.MoodTagID,
-			CreatedAt:  post.CreatedAt,
+	for _, post := range posts {
+		// Skip posts from users who blocked the current user
+		isBlockedByPostOwner, _ := c.blockService.IsBlocked(post.UserID, currentUserID)
+		if isBlockedByPostOwner {
+			continue
 		}
+
+		// Get reaction count
+		reactionCount, _ := c.reactionService.CountByPost(post.InternalID)
+
+		// Check if current user has liked
+		isLiked, _ := c.reactionService.HasUserReacted(currentUserID, post.InternalID)
+
+		// Get comment count (excluding blocked users)
+		comments, _ := c.commentService.GetCommentsByPostIDFiltered(post.InternalID, blockedUserIDs)
+		commentCount := int64(len(comments))
+
+		postResp = append(postResp, models.PostResponse{
+			PublicID:      post.PublicID.String(),
+			Content:       post.Content,
+			AiResponse:    post.AiResponse,
+			MoodTagID:     post.MoodTagID,
+			CreatedAt:     post.CreatedAt,
+			IsOwner:       post.UserID == currentUserID,
+			IsLiked:       isLiked,
+			ReactionCount: reactionCount,
+			CommentCount:  commentCount,
+		})
 	}
 
 	resp := fiber.Map{
@@ -94,6 +136,9 @@ func (c *PostController) GetPostDetail(ctx *fiber.Ctx) error {
 	if publicID == "" {
 		return utils.BadRequest(ctx, "Post ID is required", "")
 	}
+
+	// Get current user ID from JWT token
+	currentUserID, _ := ctx.Locals("user_id").(int64)
 
 	post, err := c.postService.GetPostDetail(publicID)
 	if err != nil {
@@ -115,14 +160,24 @@ func (c *PostController) GetPostDetail(ctx *fiber.Ctx) error {
 		})
 	}
 
+	// Get reaction count
+	reactionCount, _ := c.reactionService.CountByPost(post.InternalID)
+
+	// Check if current user has liked
+	isLiked, _ := c.reactionService.HasUserReacted(currentUserID, post.InternalID)
+
 	// Map ke response tanpa internal_id
 	postResp := models.PostResponse{
-		PublicID:   post.PublicID.String(),
-		Content:    post.Content,
-		AiResponse: post.AiResponse,
-		MoodTagID:  post.MoodTagID,
-		Comments:   postComment,
-		CreatedAt:  post.CreatedAt,
+		PublicID:      post.PublicID.String(),
+		Content:       post.Content,
+		AiResponse:    post.AiResponse,
+		MoodTagID:     post.MoodTagID,
+		Comments:      postComment,
+		CreatedAt:     post.CreatedAt,
+		IsOwner:       post.UserID == currentUserID,
+		IsLiked:       isLiked,
+		ReactionCount: reactionCount,
+		CommentCount:  int64(len(postComment)),
 	}
 
 	return utils.Success(ctx, "Post retrieved successfully", postResp)
@@ -142,12 +197,23 @@ func (c *PostController) GetPostsByUser(ctx *fiber.Ctx) error {
 
 	resp := make([]models.PostResponse, len(posts))
 	for i, post := range posts {
+		// Get reaction count
+		reactionCount, _ := c.reactionService.CountByPost(post.InternalID)
+
+		// Get comment count
+		comments, _ := c.commentService.GetCommentsByPostID(post.InternalID)
+		commentCount := int64(len(comments))
+
 		resp[i] = models.PostResponse{
-			PublicID:   post.PublicID.String(),
-			Content:    post.Content,
-			AiResponse: post.AiResponse,
-			MoodTagID:  post.MoodTagID,
-			CreatedAt:  post.CreatedAt,
+			PublicID:      post.PublicID.String(),
+			Content:       post.Content,
+			AiResponse:    post.AiResponse,
+			MoodTagID:     post.MoodTagID,
+			CreatedAt:     post.CreatedAt,
+			IsOwner:       true, // User's own posts are always owned by them
+			IsLiked:       true, // User's own posts are liked by default (or check from DB)
+			ReactionCount: reactionCount,
+			CommentCount:  commentCount,
 		}
 	}
 

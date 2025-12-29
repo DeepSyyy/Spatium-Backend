@@ -11,6 +11,9 @@ type ReactionRepository interface {
 	FindByUserAndPost(userID int64, postID int64) (*models.Reaction, error)
 	Create(reaction *models.Reaction) error
 	Update(reaction *models.Reaction) error
+	Delete(reaction *models.Reaction) error
+	CountByPost(postID int64) (int64, error)
+	HasUserReacted(userID int64, postID int64) (bool, error)
 }
 
 type reactionRepository struct {
@@ -37,6 +40,22 @@ func (r *reactionRepository) Create(reaction *models.Reaction) error {
 
 func (r *reactionRepository) Update(reaction *models.Reaction) error {
 	return r.db.Save(reaction).Error
+}
+
+func (r *reactionRepository) Delete(reaction *models.Reaction) error {
+	return r.db.Delete(reaction).Error
+}
+
+func (r *reactionRepository) CountByPost(postID int64) (int64, error) {
+	var count int64
+	err := r.db.Model(&models.Reaction{}).Where("post_internal_id = ?", postID).Count(&count).Error
+	return count, err
+}
+
+func (r *reactionRepository) HasUserReacted(userID int64, postID int64) (bool, error) {
+	var count int64
+	err := r.db.Model(&models.Reaction{}).Where("user_internal_id = ? AND post_internal_id = ?", userID, postID).Count(&count).Error
+	return count > 0, err
 }
 
 func (r *reactionRepository) GetReactionSummary(postInternalID int64) (map[string]int, error) {

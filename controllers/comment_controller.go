@@ -10,10 +10,15 @@ import (
 type CommentController struct {
 	commentService services.CommentService
 	postService    services.PostService
+	blockService   services.BlockService
 }
 
-func NewCommentController(commentService services.CommentService, postService services.PostService) *CommentController {
-	return &CommentController{commentService: commentService, postService: postService}
+func NewCommentController(commentService services.CommentService, postService services.PostService, blockService services.BlockService) *CommentController {
+	return &CommentController{
+		commentService: commentService,
+		postService:    postService,
+		blockService:   blockService,
+	}
 }
 
 func (c *CommentController) CreateComment(ctx *fiber.Ctx) error {
@@ -39,19 +44,30 @@ func (c *CommentController) CreateComment(ctx *fiber.Ctx) error {
 	if err != nil {
 		return utils.BadRequest(ctx, "Invalid Post ID", err.Error())
 	}
-	comment, err := c.commentService.Create(userID, postInternalID, req.Content)
+
+	result, err := c.commentService.Create(userID, postInternalID, req.Content)
 	if err != nil {
 		return utils.BadRequest(ctx, "Failed to create comment", err.Error())
 	}
 
-	resp := models.CommentResponse{
-		PublicID:  comment.PublicID.String(),
-		PostID:    req.PostID,
-		Content:   comment.Content,
-		CreatedAt: comment.CreatedAt,
+	resp := fiber.Map{
+		"comment": models.CommentResponse{
+			PublicID:  result.Comment.PublicID.String(),
+			PostID:    req.PostID,
+			Content:   result.Comment.Content,
+			CreatedAt: result.Comment.CreatedAt,
+		},
 	}
-	return utils.Success(ctx, "Comment created successfully", resp)
 
+	// If crisis indicators were detected, include support message
+	if result.ContainsCrisisIndicator {
+		resp["crisis_support"] = fiber.Map{
+			"detected": true,
+			"message":  result.CrisisSupportMessage,
+		}
+	}
+
+	return utils.Success(ctx, "Comment created successfully", resp)
 }
 
 func (c *CommentController) GetCommentsByPostID(ctx *fiber.Ctx) error {

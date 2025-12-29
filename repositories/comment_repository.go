@@ -8,6 +8,7 @@ import (
 type CommentRepository interface {
 	Create(comment *models.Comment) error
 	GetCommentsByPostID(postID int64) ([]models.Comment, error)
+	GetCommentsByPostIDExcluding(postID int64, excludeUserIDs []int64) ([]models.Comment, error)
 	Delete(commentID int64) error
 	GetCommentInternalIDByPublicID(publicID string) (int64, error)
 	GetCommentsByIDs(commentIDs []int64) ([]models.Comment, error)
@@ -27,7 +28,13 @@ func (r *commentRepository) Create(comment *models.Comment) error {
 
 func (r *commentRepository) GetCommentsByPostID(postID int64) ([]models.Comment, error) {
 	var comments []models.Comment
-	err := r.db.Where("post_internal_id = ?", postID).Find(&comments).Order("created_at asc").Error
+	err := r.db.Where("post_internal_id = ?", postID).Order("created_at asc").Find(&comments).Error
+	return comments, err
+}
+
+func (r *commentRepository) GetCommentsByPostIDExcluding(postID int64, excludeUserIDs []int64) ([]models.Comment, error) {
+	var comments []models.Comment
+	err := r.db.Where("post_internal_id = ? AND user_internal_id NOT IN ?", postID, excludeUserIDs).Order("created_at asc").Find(&comments).Error
 	return comments, err
 }
 
