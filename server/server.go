@@ -6,6 +6,7 @@ import (
 
 	"github.com/DeepSyyy/Spatium-Backend/config"
 	"github.com/DeepSyyy/Spatium-Backend/controllers"
+	"github.com/DeepSyyy/Spatium-Backend/models"
 	"github.com/DeepSyyy/Spatium-Backend/repositories"
 	"github.com/DeepSyyy/Spatium-Backend/routes"
 	"github.com/DeepSyyy/Spatium-Backend/services"
@@ -14,6 +15,9 @@ import (
 
 func Start() {
 	app := fiber.New()
+
+	// Auto-migrate new tables
+	config.DB.AutoMigrate(&models.Report{}, &models.Block{})
 
 	// Repositories
 	userRepo := repositories.NewUserRepository(config.DB)
@@ -24,6 +28,8 @@ func Start() {
 	reactionRepo := repositories.NewReactionRepository(config.DB)
 	dailyMoodRepo := repositories.NewDailyMoodRepository(config.DB)
 	aireflectionRepo := repositories.NewAIReflectionRepository(config.DB)
+	reportRepo := repositories.NewReportRepository(config.DB)
+	blockRepo := repositories.NewBlockRepository(config.DB)
 
 	// Services
 	userService := services.NewUserService(userRepo)
@@ -34,18 +40,22 @@ func Start() {
 	reactionService := services.NewReactionService(reactionRepo)
 	aiReflectionService := services.NewAIReflectionService(aireflectionRepo)
 	dailyMoodService := services.NewDailyMoodService(dailyMoodRepo, aiReflectionService)
+	reportService := services.NewReportService(reportRepo, userRepo, postRepo)
+	blockService := services.NewBlockService(blockRepo, userRepo)
 
 	// Controllers
 	userController := controllers.NewUserController(userService)
 	chatSessionController := controllers.NewChatSessionController(chatSessionService)
 	chatMessageController := controllers.NewChatMessageController(chatMessageService)
-	commentController := controllers.NewCommentController(commentService, postService)
-	postController := controllers.NewPostController(postService, commentService)
+	commentController := controllers.NewCommentController(commentService, postService, blockService)
+	postController := controllers.NewPostController(postService, commentService, reactionService, blockService)
 	reactionController := controllers.NewReactionController(reactionService, postService)
 	dailyMoodController := controllers.NewDailyMoodController(dailyMoodService)
 	aiReflectionController := controllers.NewAIReflectionController(aiReflectionService)
+	reportController := controllers.NewReportController(reportService)
+	blockController := controllers.NewBlockController(blockService)
 
-	routes.Setup(app, userController, postController, commentController, reactionController, chatSessionController, chatMessageController, dailyMoodController, aiReflectionController)
+	routes.Setup(app, userController, postController, commentController, reactionController, chatSessionController, chatMessageController, dailyMoodController, aiReflectionController, reportController, blockController)
 
 	// ✅ FIX: Always use Railway's PORT when available
 	port := os.Getenv("PORT")

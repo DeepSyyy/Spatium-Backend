@@ -17,11 +17,15 @@ type Post struct {
 }
 
 type PostResponse struct {
-	PublicID   string            `json:"public_id"`
-	UserAlias  string            `json:"alias,omitempty"` // opsional: tampilkan alias user
-	Content    string            `json:"content"`
-	Comments   []CommentResponse `json:"comments,omitempty"`
-	AiResponse string            `json:"ai_response,omitempty"`
-	MoodTagID  int64             `json:"mood_tag_id"`
-	CreatedAt  time.Time         `json:"created_at"`
+	PublicID      string            `json:"public_id"`
+	UserAlias     string            `json:"alias,omitempty"` // opsional: tampilkan alias user
+	Content       string            `json:"content"`
+	Comments      []CommentResponse `json:"comments,omitempty"`
+	AiResponse    string            `json:"ai_response,omitempty"`
+	MoodTagID     int64             `json:"mood_tag_id"`
+	CreatedAt     time.Time         `json:"created_at"`
+	IsOwner       bool              `json:"is_owner"`
+	IsLiked       bool              `json:"is_liked"`
+	ReactionCount int64             `json:"reaction_count"`
+	CommentCount  int64             `json:"comment_count"`
 }

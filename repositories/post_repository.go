@@ -8,6 +8,7 @@ import (
 type PostRepository interface {
 	Create(post *models.Post) error
 	GetAll() ([]models.Post, error)
+	GetAllExcluding(excludeUserIDs []int64) ([]models.Post, error)
 	GetPostDetail(publicID string) (*models.Post, error)
 	GetPostsByUserID(userID int64) ([]models.Post, error)
 	GetPostInternalIDByPublicID(publicID string) (int64, error)
@@ -29,7 +30,13 @@ func (r *postRepository) Create(post *models.Post) error {
 
 func (r *postRepository) GetAll() ([]models.Post, error) {
 	var posts []models.Post
-	err := r.db.Find(&posts).Error
+	err := r.db.Order("created_at desc").Find(&posts).Error
+	return posts, err
+}
+
+func (r *postRepository) GetAllExcluding(excludeUserIDs []int64) ([]models.Post, error) {
+	var posts []models.Post
+	err := r.db.Where("user_internal_id NOT IN ?", excludeUserIDs).Order("created_at desc").Find(&posts).Error
 	return posts, err
 }
 
