@@ -4,10 +4,45 @@ on:
   push:
     branches:
       - deployment
+      - develop/master
+      - master
 
 jobs:
-  build-and-deploy:
+  test:
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Install dependencies
+        run: go mod tidy
+
+      - name: Run Tests
+        run: go test ./... -v
+
+      - name: Run Tests with Coverage
+        run: go test ./... -v -coverprofile=coverage.out -coverpkg=./... -covermode=atomic
+
+      - name: Check Coverage Threshold
+        run: |
+          threshold=70
+          coverage=$(go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
+          echo "Coverage is $coverage%"
+          if (( $(echo "$coverage < $threshold" | bc -l) )); then
+            echo "❌ Coverage below threshold ($threshold%)"
+            exit 1
+          fi
+
+  build-and-deploy:
+    # 👇 hanya dijalankan jika di branch deployment
+    if: github.ref == 'refs/heads/deployment'
+    runs-on: ubuntu-latest
+    needs: test # pastikan test lulus dulu
 
     steps:
       - name: Checkout repository
@@ -24,5 +59,8 @@ jobs:
       - name: Build Go app
         run: go build -o app .
 
-      - name: Test
-        run: go test ./... -v
+      - name: Create Tag
+        run: |
+          VERSION=v$(date +'%Y.%m.%d.%H%M')
+          git tag $VERSION
+          git push origin $VERSION

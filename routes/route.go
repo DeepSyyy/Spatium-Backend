@@ -9,7 +9,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func Setup(app *fiber.App, uc *controllers.UserController, pc *controllers.PostController, cc *controllers.CommentController, rc *controllers.ReactionController, chatSessionController *controllers.ChatSessionController, chatMessageController *controllers.ChatMessageController, dailyMoodController *controllers.DailyMoodController, aic *controllers.AIReflectionController) {
+func Setup(app *fiber.App, uc *controllers.UserController, pc *controllers.PostController, cc *controllers.CommentController, rc *controllers.ReactionController, chatSessionController *controllers.ChatSessionController, chatMessageController *controllers.ChatMessageController, dailyMoodController *controllers.DailyMoodController, aic *controllers.AIReflectionController, reportController *controllers.ReportController, blockController *controllers.BlockController) {
 	if err := godotenv.Load(); err != nil {
 		log.Println("🌐 Using environment variables from system (Railway/Production)")
 	}
@@ -19,6 +19,12 @@ func Setup(app *fiber.App, uc *controllers.UserController, pc *controllers.PostC
 	// =====================================
 	app.Post("/api/v1/register", uc.Register)
 	app.Post("/api/v1/login", uc.Login)
+	app.Post("/api/v1/auth/google", uc.GoogleLogin)
+
+	// =====================================
+	// 👤 USER PROFILE ROUTES
+	// =====================================
+	app.Put("/api/v1/user/alias", middlewares.JWTProtected, uc.UpdateAlias)
 
 	// =====================================
 	// 📝 POSTS ROUTES
@@ -72,4 +78,21 @@ func Setup(app *fiber.App, uc *controllers.UserController, pc *controllers.PostC
 	// =====================================
 	app.Post("/api/v1/ai/reflection", middlewares.JWTProtected, aic.GenerateReflection)
 	app.Get("/api/v1/ai/reflection", middlewares.JWTProtected, aic.GetUserReflection)
+
+	// =====================================
+	// 🚨 REPORTS ROUTES (Content Moderation)
+	// =====================================
+	app.Get("/api/v1/reports/reasons", middlewares.JWTProtected, reportController.GetReportReasons)
+	app.Post("/api/v1/reports", middlewares.JWTProtected, reportController.CreateReport)
+	app.Get("/api/v1/reports/me", middlewares.JWTProtected, reportController.GetMyReports)
+	// Admin routes for report management
+	app.Get("/api/v1/admin/reports/pending", middlewares.JWTProtected, reportController.GetPendingReports)
+	app.Put("/api/v1/admin/reports/:report_id/status", middlewares.JWTProtected, reportController.UpdateReportStatus)
+
+	// =====================================
+	// 🚫 BLOCK ROUTES (User Safety)
+	// =====================================
+	app.Post("/api/v1/users/block", middlewares.JWTProtected, blockController.BlockUser)
+	app.Delete("/api/v1/users/block/:user_id", middlewares.JWTProtected, blockController.UnblockUser)
+	app.Get("/api/v1/users/blocked", middlewares.JWTProtected, blockController.GetBlockedUsers)
 }
