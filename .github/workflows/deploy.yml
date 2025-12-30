@@ -18,6 +18,6 @@ jobs:
           script: |
             cd /home/ubuntu/Spatium-Backend
             git pull origin deployment
-            go build -o app
+            /usr/local/go/bin/go build -o app
             pkill app || true
             nohup ./app > app.log 2>&1 &
