@@ -11,26 +11,62 @@ import (
 
 // ModerationResult contains the result of content moderation
 type ModerationResult struct {
-	IsSafe        bool     `json:"is_safe"`
-	IsBlocked     bool     `json:"is_blocked"`
-	Categories    []string `json:"categories,omitempty"`
-	Reason        string   `json:"reason,omitempty"`
-	SeverityLevel string   `json:"severity_level,omitempty"` // "low", "medium", "high", "critical"
+	IsSafe          bool     `json:"is_safe"`
+	IsBlocked       bool     `json:"is_blocked"`
+	IsCrisisContent bool     `json:"is_crisis_content"` // New: flag for crisis content
+	Categories      []string `json:"categories,omitempty"`
+	Reason          string   `json:"reason,omitempty"`
+	SeverityLevel   string   `json:"severity_level,omitempty"`  // "low", "medium", "high", "critical"
+	SupportMessage  string   `json:"support_message,omitempty"` // Crisis support message
 }
 
 // TriggerWords - kata-kata yang memerlukan perhatian khusus untuk kesehatan mental
+// PENTING: Konten dengan kata-kata ini akan DIBLOKIR dari publik untuk mencegah Werther effect
 var triggerWords = []string{
-	// Suicide-related (Indonesian)
-	"bunuh diri", "mau mati", "ingin mati", "pengen mati", "lebih baik mati",
-	"gantung diri", "akhiri hidup", "tidak ingin hidup", "menyerah hidup",
-	"capek hidup", "lelah hidup", "bosan hidup",
-	// Self-harm (Indonesian)
-	"menyakiti diri", "lukai diri", "potong tangan", "silet",
+	// Suicide-related (Indonesian) - termasuk variasi slang/typo
+	"bunuh diri", "bunuhdiri", "bundir", "bnuh diri", "bunuh dir",
+	"mau mati", "maumati", "mw mati", "mo mati", "pgn mati",
+	"ingin mati", "pengen mati", "pngen mati", "pengin mati",
+	"lebih baik mati", "mending mati", "mendingan mati",
+	"gantung diri", "gantungdiri", "gtung diri",
+	"akhiri hidup", "akhirin hidup", "end it all",
+	"tidak ingin hidup", "ga mau hidup", "gak mau hidup", "gamau hidup",
+	"menyerah hidup", "nyerah hidup", "give up",
+	"capek hidup", "cape hidup", "cpk hidup", "lelah hidup",
+	"bosan hidup", "bosen hidup", "muak hidup",
+	"mati aja", "mati saja", "matiin aja", "matiaja",
+	"ga ada gunanya hidup", "hidup ga ada artinya",
+	"loncat dari", "lompat dari", "terjun dari",
+	// Self-harm (Indonesian) - termasuk variasi
+	"menyakiti diri", "nyakitin diri", "sakitin diri sendiri",
+	"lukai diri", "melukai diri", "luka diri",
+	"potong tangan", "potong nadi", "iris tangan", "iris nadi",
+	"silet", "cutter", "sayat", "nyayat",
+	"self harm", "selfharm", "sh",
 	// Suicide-related (English)
-	"kill myself", "want to die", "end my life", "suicide",
-	"hang myself", "jump off", "overdose",
+	"kill myself", "kms", "kys", "kill yourself",
+	"want to die", "wanna die", "i wanna die",
+	"end my life", "end it all", "ending it",
+	"suicide", "suicidal", "commit suicide",
+	"hang myself", "hanging myself",
+	"jump off", "jumping off",
+	"overdose", "od",
 	// Self-harm (English)
-	"cut myself", "hurt myself", "self harm",
+	"cut myself", "cutting myself", "cutting",
+	"hurt myself", "hurting myself",
+}
+
+// Crisis patterns - regex patterns untuk deteksi lebih fleksibel
+var crisisPatterns = []string{
+	`(?i)pen?gen\s*(bunuh|mati|bundir)`,
+	`(?i)(mau|ingin|pengen)\s*(mati|bundir|bunuh\s*diri)`,
+	`(?i)(cape[k]?|lelah|bosan|bosen|muak)\s*(hidup|sama\s*hidup)`,
+	`(?i)(akhiri|selesaikan|end)\s*(hidup|semuanya|it\s*all)`,
+	`(?i)(loncat|lompat|terjun)\s*(dari|ke)\s*(gedung|jembatan|lantai)`,
+	`(?i)(iris|potong|sayat)\s*(tangan|nadi|pergelangan)`,
+	`(?i)(ga[k]?|tidak|no)\s*(ada|punya)\s*(harapan|hope|gunanya)`,
+	`(?i)(lebih\s*baik|mending)\s*(ga[k]?\s*ada|mati|pergi)`,
+	`(?i)i\s*(want|wanna)\s*(to\s*)?(die|kill\s*myself)`,
 }
 
 // ToxicWords - kata-kata kasar/toxic yang harus diblokir
@@ -53,21 +89,42 @@ var toxicWords = []string{
 // Returns ModerationResult with safety status and categories
 func ModerateContent(content string) (*ModerationResult, error) {
 	result := &ModerationResult{
-		IsSafe:        true,
-		IsBlocked:     false,
-		Categories:    []string{},
-		SeverityLevel: "low",
+		IsSafe:          true,
+		IsBlocked:       false,
+		IsCrisisContent: false,
+		Categories:      []string{},
+		SeverityLevel:   "low",
 	}
 
 	lowerContent := strings.ToLower(content)
 
-	// Step 1: Check for trigger words (mental health crisis indicators)
+	// Step 1: Check for crisis indicators (BLOCK from public + show support)
+	// Untuk mencegah Werther effect, konten krisis tidak dipublikasikan
 	for _, word := range triggerWords {
 		if strings.Contains(lowerContent, word) {
+			result.IsSafe = false
+			result.IsBlocked = true
+			result.IsCrisisContent = true
 			result.Categories = append(result.Categories, "crisis_indicator")
 			result.SeverityLevel = "critical"
-			// Note: We don't block these, but flag for support resources
-			break
+			result.Reason = "Konten mengandung indikator krisis kesehatan mental"
+			result.SupportMessage = GetCrisisSupportMessage()
+			return result, nil
+		}
+	}
+
+	// Step 1b: Check crisis patterns with regex
+	for _, pattern := range crisisPatterns {
+		matched, _ := regexp.MatchString(pattern, lowerContent)
+		if matched {
+			result.IsSafe = false
+			result.IsBlocked = true
+			result.IsCrisisContent = true
+			result.Categories = append(result.Categories, "crisis_indicator")
+			result.SeverityLevel = "critical"
+			result.Reason = "Konten mengandung indikator krisis kesehatan mental"
+			result.SupportMessage = GetCrisisSupportMessage()
+			return result, nil
 		}
 	}
 
@@ -103,7 +160,7 @@ func ModerateContent(content string) (*ModerationResult, error) {
 	}
 
 	// Step 4: Use OpenAI Moderation API for additional check (if available)
-	if config.AppConfig.OpenAIAPIKey != "" {
+	if config.AppConfig != nil && config.AppConfig.OpenAIAPIKey != "" {
 		openAIResult, err := checkWithOpenAIModeration(content)
 		if err == nil && openAIResult != nil {
 			if openAIResult.IsBlocked {
