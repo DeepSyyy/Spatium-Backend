@@ -12,12 +12,12 @@ jobs:
       - name: SSH deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: IP_VPS
+          host: 72.62.124.125
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /home/ubuntu/Spatium-Backend
             git pull origin deployment
-            go mod tidy
             go build -o app
-            sudo systemctl restart app
+            pkill app || true
+            nohup ./app > app.log 2>&1 &
