@@ -1,10 +1,12 @@
 package controllers
 
 import (
+	"github.com/DeepSyyy/Spatium-Backend/config"
 	"github.com/DeepSyyy/Spatium-Backend/models"
 	"github.com/DeepSyyy/Spatium-Backend/services"
 	"github.com/DeepSyyy/Spatium-Backend/utils"
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/jinzhu/copier"
 )
@@ -107,6 +109,50 @@ func (c *UserController) GoogleLogin(ctx *fiber.Ctx) error {
 		"user":          userResponse,
 		"token":         token,
 		"refresh_token": refreshToken,
+	})
+}
+
+func (c *UserController) RefreshToken(ctx *fiber.Ctx) error {
+	var body struct {
+		RefreshToken string `json:"refresh_token"`
+	}
+	if err := ctx.BodyParser(&body); err != nil {
+		return utils.BadRequest(ctx, "Invalid request body", err.Error())
+	}
+	if body.RefreshToken == "" {
+		return utils.BadRequest(ctx, "Refresh token is required", "")
+	}
+
+	claims := jwt.MapClaims{}
+	token, err := jwt.ParseWithClaims(body.RefreshToken, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(config.AppConfig.JWTSecret), nil
+	})
+	if err != nil || !token.Valid {
+		return utils.Unauthorized(ctx, "Invalid or expired refresh token", "")
+	}
+
+	publicID, ok := claims["public_id"].(string)
+	if !ok || publicID == "" {
+		return utils.Unauthorized(ctx, "Invalid refresh token payload", "")
+	}
+
+	user, err := c.service.GetByPublicID(publicID)
+	if err != nil {
+		return utils.Unauthorized(ctx, "User not found", err.Error())
+	}
+
+	newToken, err := utils.GenerateToken(user.PublicID.String(), user.Alias)
+	if err != nil {
+		return utils.BadRequest(ctx, "Token generation failed", err.Error())
+	}
+	newRefreshToken, err := utils.GenerateRefreshToken(user.PublicID.String())
+	if err != nil {
+		return utils.BadRequest(ctx, "Refresh token generation failed", err.Error())
+	}
+
+	return utils.Success(ctx, "Token refreshed", fiber.Map{
+		"token":         newToken,
+		"refresh_token": newRefreshToken,
 	})
 }
 

@@ -15,6 +15,7 @@ type UserService interface {
 	Login(recoveryCode string) (*models.User, error)
 	GoogleLogin(googleID, email, alias, photoURL string) (*models.User, error)
 	UpdateAlias(userID, alias string) (*models.User, error)
+	GetByPublicID(publicID string) (*models.User, error)
 }
 
 type userService struct {
@@ -136,5 +137,13 @@ func (s *userService) UpdateAlias(userID, alias string) (*models.User, error) {
 		return nil, fmt.Errorf("failed to update alias: %w", err)
 	}
 
+	return user, nil
+}
+
+func (s *userService) GetByPublicID(publicID string) (*models.User, error) {
+	user, err := s.repo.GetByPublicID(publicID)
+	if err != nil {
+		return nil, fmt.Errorf("user not found: %w", err)
+	}
 	return user, nil
 }

@@ -20,6 +20,7 @@ func Setup(app *fiber.App, uc *controllers.UserController, pc *controllers.PostC
 	app.Post("/api/v1/register", uc.Register)
 	app.Post("/api/v1/login", uc.Login)
 	app.Post("/api/v1/auth/google", uc.GoogleLogin)
+	app.Post("/api/v1/token/refresh", uc.RefreshToken)
 
 	// =====================================
 	// 👤 USER PROFILE ROUTES
